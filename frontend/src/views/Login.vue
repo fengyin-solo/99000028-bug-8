@@ -49,7 +49,7 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '../stores/auth'
@@ -75,20 +75,33 @@ const rules = {
   ]
 }
 
+// Only same-app internal paths are valid post-login targets.
+function resolveRedirect(target) {
+  if (typeof target === 'string' && target.startsWith('/') && !target.startsWith('//')) {
+    return target
+  }
+  return '/admin'
+}
+
+onMounted(() => {
+  if (route.query.reason === 'expired') {
+    ElMessage.warning('登录已失效，请重新登录')
+  }
+})
+
 async function handleLogin() {
   if (!formRef.value) return
-  
+
   await formRef.value.validate(async (valid) => {
     if (!valid) return
-    
+
     loading.value = true
     try {
       await authStore.login(form.username, form.password)
       ElMessage.success('登录成功')
-      
+
       // Redirect to the original page or admin dashboard
-      const redirect = route.query.redirect || '/admin'
-      router.push(redirect)
+      router.push(resolveRedirect(route.query.redirect))
     } catch (error) {
       const message = error.response?.data?.error || '登录失败'
       ElMessage.error(message)

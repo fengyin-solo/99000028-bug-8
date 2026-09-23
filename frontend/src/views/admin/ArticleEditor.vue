@@ -118,6 +118,9 @@ async function fetchArticle() {
     form.tagsInput = article.tags.join(', ')
   } catch (error) {
     console.error('Failed to fetch article:', error)
+    const status = error.response?.status
+    // Auth failures are handled centrally (reset + redirect to login).
+    if (status === 401 || status === 403) return
     ElMessage.error('获取文章失败')
     router.push('/admin/articles')
   } finally {
@@ -157,6 +160,8 @@ async function handleSave() {
       router.push('/admin/articles')
     } catch (error) {
       console.error('Failed to save article:', error)
+      // Auth failures are handled centrally (reset + redirect to login).
+      if (error.response?.status === 401 || error.response?.status === 403) return
       const message = error.response?.data?.error || '保存文章失败'
       ElMessage.error(message)
     } finally {

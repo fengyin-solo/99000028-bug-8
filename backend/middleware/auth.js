@@ -15,7 +15,12 @@ function authenticateToken(req, res, next) {
     req.user = user;
     next();
   } catch (err) {
-    return res.status(403).json({ error: 'Invalid or expired token' });
+    // Missing/invalid/expired credentials are all 401 so the client
+    // can uniformly reset its auth state and ask for a fresh login.
+    const message = err.name === 'TokenExpiredError'
+      ? '登录已失效，请重新登录'
+      : 'Invalid or expired token';
+    return res.status(401).json({ error: message });
   }
 }
 

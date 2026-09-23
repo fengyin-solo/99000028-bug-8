@@ -78,7 +78,10 @@ async function fetchArticles() {
     pagination.value = response.data.pagination
   } catch (error) {
     console.error('Failed to fetch articles:', error)
-    ElMessage.error('获取文章列表失败')
+    // Auth failures are handled centrally (reset + redirect to login).
+    if (error.response?.status !== 401 && error.response?.status !== 403) {
+      ElMessage.error('获取文章列表失败')
+    }
   } finally {
     loading.value = false
   }
@@ -113,8 +116,10 @@ async function deleteArticle(article) {
     ElMessage.success('文章已删除')
     fetchArticles()
   } catch (error) {
-    if (error !== 'cancel') {
-      console.error('Failed to delete article:', error)
+    if (error === 'cancel') return
+    console.error('Failed to delete article:', error)
+    // Auth failures are handled centrally (reset + redirect to login).
+    if (error.response?.status !== 401 && error.response?.status !== 403) {
       ElMessage.error('删除文章失败')
     }
   }

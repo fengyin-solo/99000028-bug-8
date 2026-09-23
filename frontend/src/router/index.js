@@ -48,15 +48,35 @@ const router = createRouter({
   routes
 })
 
+// Only honour same-app internal paths as post-login targets; ignore
+// protocol-relative or absolute URLs (open-redirect safety).
+function resolveRedirect(target) {
+  if (typeof target === 'string' && target.startsWith('/') && !target.startsWith('//')) {
+    return target
+  }
+  return '/admin'
+}
+
 // Navigation guard for auth
 router.beforeEach((to, from, next) => {
+  const authStore = useAuthStore()
+
   if (to.meta.requiresAuth) {
-    const authStore = useAuthStore()
     if (!authStore.isLoggedIn) {
-      next({ name: 'Login', query: { redirect: to.fullPath } })
+      next({
+        name: 'Login',
+        query: {
+          redirect: to.fullPath,
+          reason: 'required'
+        }
+      })
     } else {
       next()
     }
+  } else if (to.name === 'Login' && authStore.isLoggedIn) {
+    // Valid session: opening the login page returns to the original target
+    // (or the dashboard) instead of showing a login form.
+    next(resolveRedirect(to.query.redirect))
   } else {
     next()
   }
