@@ -117,6 +117,8 @@ async function fetchArticle() {
     form.summary = article.summary
     form.tagsInput = article.tags.join(', ')
   } catch (error) {
+    // 401 由响应拦截器统一处理（清理会话并跳转登录页）
+    if (error.response?.status === 401) return
     console.error('Failed to fetch article:', error)
     ElMessage.error('获取文章失败')
     router.push('/admin/articles')
@@ -156,9 +158,12 @@ async function handleSave() {
       
       router.push('/admin/articles')
     } catch (error) {
-      console.error('Failed to save article:', error)
-      const message = error.response?.data?.error || '保存文章失败'
-      ElMessage.error(message)
+      // 401 由响应拦截器统一处理（清理会话并跳转登录页）
+      if (error.response?.status !== 401) {
+        console.error('Failed to save article:', error)
+        const message = error.response?.data?.error || '保存文章失败'
+        ElMessage.error(message)
+      }
     } finally {
       saving.value = false
     }

@@ -15,7 +15,8 @@ function authenticateToken(req, res, next) {
     req.user = user;
     next();
   } catch (err) {
-    return res.status(403).json({ error: 'Invalid or expired token' });
+    // 统一返回 401（未认证），前端据此处会话失效
+    return res.status(401).json({ error: 'Invalid or expired token' });
   }
 }
 

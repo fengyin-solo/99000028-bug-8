@@ -49,7 +49,7 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '../stores/auth'
@@ -75,20 +75,37 @@ const rules = {
   ]
 }
 
+// 会话失效被送回登录页时给出明确提示
+onMounted(() => {
+  if (route.query.expired) {
+    ElMessage.warning('登录已过期，请重新登录')
+  }
+})
+
+// 只回跳站内路径，登录成功后返回原目标页
+function resolveRedirect() {
+  const raw = Array.isArray(route.query.redirect)
+    ? route.query.redirect[0]
+    : route.query.redirect
+  if (typeof raw === 'string' && raw.startsWith('/') && raw !== '/login') {
+    return raw
+  }
+  return '/admin'
+}
+
 async function handleLogin() {
   if (!formRef.value) return
-  
+
   await formRef.value.validate(async (valid) => {
     if (!valid) return
-    
+
     loading.value = true
     try {
       await authStore.login(form.username, form.password)
       ElMessage.success('登录成功')
-      
+
       // Redirect to the original page or admin dashboard
-      const redirect = route.query.redirect || '/admin'
-      router.push(redirect)
+      router.push(resolveRedirect())
     } catch (error) {
       const message = error.response?.data?.error || '登录失败'
       ElMessage.error(message)

@@ -48,18 +48,31 @@ const router = createRouter({
   routes
 })
 
+// 只接受站内路径，避免开放重定向或绕回登录页
+function resolveRedirect(raw, fallback = '/admin') {
+  const redirect = Array.isArray(raw) ? raw[0] : raw
+  if (typeof redirect === 'string' && redirect.startsWith('/') && redirect !== '/login') {
+    return redirect
+  }
+  return fallback
+}
+
 // Navigation guard for auth
 router.beforeEach((to, from, next) => {
-  if (to.meta.requiresAuth) {
-    const authStore = useAuthStore()
-    if (!authStore.isLoggedIn) {
-      next({ name: 'Login', query: { redirect: to.fullPath } })
-    } else {
-      next()
-    }
-  } else {
-    next()
+  const authStore = useAuthStore()
+
+  if (to.meta.requiresAuth && !authStore.isLoggedIn) {
+    next({ name: 'Login', query: { redirect: to.fullPath } })
+    return
   }
+
+  // 已登录用户访问登录页时，直接送往目标页，保持各处状态一致
+  if (to.name === 'Login' && authStore.isLoggedIn) {
+    next(resolveRedirect(to.query.redirect))
+    return
+  }
+
+  next()
 })
 
 export default router

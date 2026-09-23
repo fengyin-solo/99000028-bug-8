@@ -77,8 +77,11 @@ async function fetchArticles() {
     articles.value = response.data.articles
     pagination.value = response.data.pagination
   } catch (error) {
-    console.error('Failed to fetch articles:', error)
-    ElMessage.error('获取文章列表失败')
+    // 401 由响应拦截器统一处理（清理会话并跳转登录页）
+    if (error.response?.status !== 401) {
+      console.error('Failed to fetch articles:', error)
+      ElMessage.error('获取文章列表失败')
+    }
   } finally {
     loading.value = false
   }
@@ -113,7 +116,7 @@ async function deleteArticle(article) {
     ElMessage.success('文章已删除')
     fetchArticles()
   } catch (error) {
-    if (error !== 'cancel') {
+    if (error !== 'cancel' && error.response?.status !== 401) {
       console.error('Failed to delete article:', error)
       ElMessage.error('删除文章失败')
     }
